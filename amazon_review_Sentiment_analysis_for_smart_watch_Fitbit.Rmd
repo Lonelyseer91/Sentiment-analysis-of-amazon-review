@@ -1,0 +1,114 @@
+---
+title: "amazon_review_Sentiment_analysis_for_smart_watch_Fitbit"
+author: "Deepak_Prakash"
+date: "12/27/2021"
+output: html_document
+
+Mode1 :  
+NLP Mode1 based on sentiment analysis in R 
+Data : 
+Amazon Product reviews
+Output :
+Sentiment score based on reviews 
+
+```{r}
+#Importing file into R
+
+#Load packages into R 
+
+install.packages("tm")
+install.packages("wordcloud")
+install.packages("syuzhet")
+
+library(tm)          #For text analytics - text mining 
+library(wordcloud)   #to create wordcloud 
+library(syuzhet)
+
+```
+#Using packages (tm), (worldcloud), (syuzhet) for text mining and data cleaning
+```{r}
+#import data into R
+reviews < - read.csv(file.choose(), header = T)
+```
+```{r}
+#check the structure of file 
+str(reviews)
+```
+#creating corpus 
+#this funtion uses the base package funtion iconv to translate value labels
+```{r}
+corpus <- iconv(reviews$text)
+corpus <- Corpus(VectorSource(corpus))
+```
+```{r}
+#To See the corpus 
+
+inspect(corpus[1:5] )
+```
+#cleaning Corpus
+```{r}
+corpus <- tm_map(corpus, tolower)
+
+corpus <- tm_map(corpus, removePunctuation)
+
+corpus <- tm_map(corpus, removeNumbers)
+
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
+corpus <- tm_map(corpus, stripWhitespace)
+```
+#remove some common words not to used in text analysis - replace word 1, word 2 by actual words
+```{r}
+corpus <- tm_map(corpus, removeWords, c("watch", "build",  "battery", "price", "will", "get", "battery", "series", "display", "watch", "just", "days", "smart", "got","loaded","using" ))
+
+reviews_final <- corpus
+```
+
+#create Term Document 
+```{r}
+tdm <- TermDocumentMatrix(reviews_final)
+tdm <- as.matrix(tdm)
+tdm[1:10, 1:5]
+
+```
+#Bar plot of words 
+```{r}
+w <- rowSums(tdm)
+w<- subset(w, w>=25)
+barplot(w, las = 2, col = "blue")
+
+```
+#create word cloud 
+```{r}
+w <- sort(rowSums(tdm), decreasing = T) 
+set.seed(2000)
+wordcloud(words = names(w), freq = w, max.words = 50, random.order = T, min.freq = 5, colors = brewer.pal(25, "Dark2"), scale = c(3,0.3))
+
+```
+# To obtain sentiment scores
+
+```{r}
+sentiment_data <- iconv(reviews$text)
+s <- get_nrc_sentiment(sentiment_data)
+s[1:10,]
+```
+#calculate review wise score 
+```{r}
+s$score <- s$positive - s$negative
+s[1:10]
+```
+```{r}
+write.csv(x = s, file = "/cloud/project/Sentiment_analysis/Final_score.csv")
+```
+#check product sentiment 
+
+#check overall sentiment of the product
+```{r}
+review_score <- colSums(s[,])
+print(review_score)
+```
+#Plot product sentiment 
+#To Bar plot
+```{r}
+barplot(colSums(s), las = 2, col = rainbow(10), ylab = 'count', main ='sentiment')
+```
